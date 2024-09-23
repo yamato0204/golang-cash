@@ -23,10 +23,11 @@ services:
     container_name: my-db
     volumes:
       - db-data-sample:/var/lib/mysql
+      - ./db/initdb.d:/docker-entrypoint-initdb.d/
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_USER: ${MYSQL_USER_NAME}
+      MYSQL_USER: ${MYSQL_USER}
       MYSQL_DATABASE: ${MYSQL_DB_NAME}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
 
