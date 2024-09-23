@@ -1,0 +1,46 @@
+version: "3.8"
+services:
+  go:
+    build:
+      # context: ./api
+      context: ./api/
+      dockerfile: Dockerfile
+    environment:
+      - Asia/Tokyo
+    ports:
+      - "8080:8080"
+    develop:
+      watch:
+        - action: rebuild
+          path: ./api
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+  db:
+    image: mysql:8.0
+    container_name: my-db
+    volumes:
+      - db-data-sample:/var/lib/mysql
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER_NAME}
+      MYSQL_DATABASE: ${MYSQL_DB_NAME}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+    ports:
+      - 3306:3306
+    # healthcheck:
+    #   test: ["CMD", "mysqladmin", "ping"]
+    #   timeout: 40s
+    #   retries: 30
+    #   start_interval: 1s
+    #   interval: 2s
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root -p${MYSQL_ROOT_PASSWORD}
+networks:
+  default:
+volumes:
+  db-data-sample:
