@@ -5,8 +5,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/patrickmn/go-cache"
 )
 
 type SqlHandler interface {
@@ -23,6 +25,17 @@ func NewInfra(db *sqlx.DB) SqlHandler {
 
 func (s *sqlHandler) GetUser(ctx context.Context, userID string) (*entity.User, error) {
 	var user entity.User
+
+	// キャッシュの初期設定
+	c := cache.New(30*time.Second, 10*time.Minute)
+
+	key := fmt.Sprintf("id_%s", userID)
+
+	if x, found := c.Get(key); found {
+		fmt.Println("got from cash")
+		return x.(*entity.User), nil
+	}
+
 	err := s.db.GetContext(ctx, &user, `
 	SELECT
 		id,
@@ -40,6 +53,10 @@ func (s *sqlHandler) GetUser(ctx context.Context, userID string) (*entity.User, 
 		fmt.Println(err)
 		return nil, err
 	}
+
+	c.Set(key, &user, cache.DefaultExpiration)
+	fmt.Println("got from db")
+
 	return &user, nil
 
 }

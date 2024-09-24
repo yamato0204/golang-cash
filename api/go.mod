@@ -5,8 +5,8 @@ go 1.22.0
 require (
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jmoiron/sqlx v1.4.0
-	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/echo/v4 v4.12.0
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 )
 
 require (
