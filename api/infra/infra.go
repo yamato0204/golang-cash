@@ -16,36 +16,38 @@ type SqlHandler interface {
 }
 
 type sqlHandler struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache *cache.Cache
 }
 
 func NewInfra(db *sqlx.DB) SqlHandler {
-	return &sqlHandler{db} //暗黙的　構造体を返す
+	// キャッシュの初期化をここで行い、構造体にセット
+	c := cache.New(30*time.Second, 10*time.Minute)
+	return &sqlHandler{db, c}
 }
 
 func (s *sqlHandler) GetUser(ctx context.Context, userID string) (*entity.User, error) {
 	var user entity.User
 
-	// キャッシュの初期設定
-	c := cache.New(30*time.Second, 10*time.Minute)
-
 	key := fmt.Sprintf("id_%s", userID)
 
-	if x, found := c.Get(key); found {
-		fmt.Println("got from cash")
+	// キャッシュから取得
+	if x, found := s.cache.Get(key); found {
+		fmt.Println("got from cache")
 		return x.(*entity.User), nil
 	}
 
+	// データベースから取得
 	err := s.db.GetContext(ctx, &user, `
 	SELECT
 		id,
 		name,
 		email
-		FROM
+	FROM
 		users
-		WHERE
+	WHERE
 		id = ?
-		`, userID)
+	`, userID)
 
 	if err != nil {
 		log.Println(err)
@@ -54,9 +56,9 @@ func (s *sqlHandler) GetUser(ctx context.Context, userID string) (*entity.User, 
 		return nil, err
 	}
 
-	c.Set(key, &user, cache.DefaultExpiration)
+	// キャッシュにセット
+	s.cache.Set(key, &user, cache.DefaultExpiration)
 	fmt.Println("got from db")
 
 	return &user, nil
-
 }
